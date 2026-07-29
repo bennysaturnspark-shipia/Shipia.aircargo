@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shipia Air Cargo // Air Freight Analytics & Summary</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Leaflet CSS & JS for Interactive Global Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#070b14',
+                        darkcard: '#0f172a',
+                        darkborder: 'rgba(56, 189, 248, 0.15)',
+                        neonCyan: '#00f3ff',
+                        neonPink: '#ff007f',
+                        neonPurple: '#9d4edd',
+                        neonGreen: '#00ff66',
+                        neonYellow: '#ffbe0b'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #070b14;
+            color: #f1f5f9;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(0, 243, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(255, 0, 127, 0.05) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        /* Neon Glow Effects */
+        .neon-border-cyan {
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            box-shadow: 0 0 12px rgba(0, 243, 255, 0.2);
+        }
+        .neon-border-pink {
+            border: 1px solid rgba(255, 0, 127, 0.4);
+            box-shadow: 0 0 12px rgba(255, 0, 127, 0.2);
+        }
+        .neon-text-cyan {
+            color: #00f3ff;
+            text-shadow: 0 0 8px rgba(0, 243, 255, 0.6);
+        }
+        .neon-text-pink {
+            color: #ff007f;
+            text-shadow: 0 0 8px rgba(255, 0, 127, 0.6);
+        }
+        .neon-text-green {
+            color: #00ff66;
+            text-shadow: 0 0 8px rgba(0, 255, 102, 0.6);
+        }
+        .neon-btn-cyan {
+            background: linear-gradient(135deg, rgba(0, 243, 255, 0.2), rgba(0, 150, 255, 0.1));
+            border: 1px solid #00f3ff;
+            color: #00f3ff;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+            transition: all 0.25s ease;
+        }
+        .neon-btn-cyan:hover {
+            background: rgba(0, 243, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.6);
+            transform: translateY(-1px);
+        }
+        .neon-btn-pink {
+            background: linear-gradient(135deg, rgba(255, 0, 127, 0.2), rgba(150, 0, 255, 0.1));
+            border: 1px solid #ff007f;
+            color: #ff007f;
+            box-shadow: 0 0 10px rgba(255, 0, 127, 0.3);
+            transition: all 0.25s ease;
+        }
+        .neon-btn-pink:hover {
+            background: rgba(255, 0, 127, 0.3);
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.6);
+            transform: translateY(-1px);
+        }
+
+        /* Glassmorphism card */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+        
+        .glass-card-glow {
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .glass-card-glow:hover {
+            border-color: rgba(0, 243, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.15);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #070b14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f3ff;
+        }
+
+        /* Leaflet Dark Theme Overrides & Map Styling */
+        .leaflet-container {
+            background-color: #070b14 !important;
+            font-family: 'Inter', sans-serif !important;
+            border-radius: 0.75rem;
+        }
+        .leaflet-popup-content-wrapper {
+            background: rgba(15, 23, 42, 0.95) !important;
+            backdrop-filter: blur(8px);
+            color: #f1f5f9 !important;
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+            border-radius: 10px !important;
+            font-size: 12px;
+        }
+        .leaflet-popup-tip {
+            background: rgba(15, 23, 42, 0.95) !important;
+        }
+        .leaflet-control-zoom a {
+            background-color: #0f172a !important;
+            color: #00f3ff !important;
+            border-color: #334155 !important;
+        }
+        .leaflet-control-zoom a:hover {
+            background-color: #1e293b !important;
+        }
+
+        /* Custom Map Pulsing Pin Markers */
+        .map-marker-origin {
+            width: 14px;
+            height: 14px;
+            background-color: #9d4edd;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #9d4edd, 0 0 20px #9d4edd;
+            animation: pulse-origin 2s infinite;
+        }
+        .map-marker-dest {
+            width: 14px;
+            height: 14px;
+            background-color: #00ff66;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00ff66, 0 0 20px #00ff66;
+            animation: pulse-dest 2s infinite;
+        }
+        @keyframes pulse-origin {
+            0% { box-shadow: 0 0 0 0 rgba(157, 78, 221, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(157, 78, 221, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(157, 78, 221, 0); }
+        }
+        @keyframes pulse-dest {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 102, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 255, 102, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 102, 0); }
+        }
+
+        /* Print and PDF Export Styles */
+        @media print {
+            body {
+                background-color: #070b14 !important;
+                color: #f1f5f9 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            body > *:not(#printReportModal) {
+                display: none !important;
+            }
+            #printReportModal {
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                background-color: #070b14 !important;
+                display: block !important;
+                padding: 0 !important;
+                overflow: visible !important;
+            }
+            #printReportContainer {
+                box-shadow: none !important;
+                border: none !important;
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            section, .print-break-inside-avoid {
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans antialiased text-slate-200 selection:bg-cyan-500 selection:text-black">
+
+    <!-- Top Header Navigation -->
+    <header class="sticky top-0 z-40 border-b border-slate-800 bg-darkbg/90 backdrop-blur-md px-4 lg:px-8 py-3.5 no-print">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <!-- Logo & Brand -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-pink-500 p-0.5 flex items-center justify-center shadow-[0_0_15px_rgba(0,243,255,0.4)]">
+                    <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                        <i class="fa-solid fa-plane-departure text-cyan-400 text-lg"></i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="font-bold text-xl tracking-wider text-white flex items-center gap-2">
+                        Shipia <span class="neon-text-cyan">Air Cargo</span> <span class="text-xs px-2 py-0.5 rounded-full bg-pink-950/80 text-pink-400 border border-pink-800 font-mono">v2.5</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Air Freight Master Airway Bill Tracking & Visual Summary Report</p>
+                </div>
+            </div>
+
+            <!-- Quick Action Toolbar -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button id="openModalBtn" onclick="toggleModal('shipmentModal', true)" class="neon-btn-cyan px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-plus text-sm"></i> Log Shipment
+                </button>
+                <button onclick="seedSampleData()" class="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-2" title="Load sample shipment logs for testing">
+                    <i class="fa-solid fa-flask text-purple-400"></i> Sample Data
+                </button>
+                <button onclick="exportCSV()" class="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-2">
+                    <i class="fa-solid fa-file-csv text-green-400"></i> Export CSV
+                </button>
+                <button onclick="triggerPrint()" class="neon-btn-pink px-3.5 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-file-pdf text-amber-400"></i> Print / PDF Report
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 space-y-6">
+
+        <!-- Date Range Filter & Report Control Header -->
+        <section class="glass-card rounded-2xl p-5 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative overflow-hidden">
+            <div class="absolute -right-10 -top-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f3ff]"></span>
+                    <h2 class="text-lg font-bold text-white tracking-wide">Summary Analytics Dashboard</h2>
+                </div>
+                <p class="text-xs text-slate-400">Select reporting period to aggregate MAWB shipments, route traffic, and airline distributions.</p>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <div class="flex flex-col">
+                    <label class="text-[10px] text-slate-400 uppercase font-mono mb-1">Time Range Filter</label>
+                    <select id="timeRangeSelect" onchange="handleTimeRangeChange()" class="bg-slate-900 text-slate-200 text-xs rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-cyan-400">
+                        <option value="ALL">All Time</option>
+                        <option value="TODAY">Today</option>
+                        <option value="7DAYS">Last 7 Days</option>
+                        <option value="30DAYS" selected>Last 30 Days</option>
+                        <option value="THIS_MONTH">This Month</option>
+                        <option value="CUSTOM">Custom Date Range</option>
+                    </select>
+                </div>
+
+                <!-- Custom Date Inputs (Hidden by default) -->
+                <div id="customDateContainer" class="hidden flex items-center gap-2">
+                    <div class="flex flex-col">
+                        <label class="text-[10px] text-slate-400 uppercase font-mono mb-1">From</label>
+                        <input type="date" id="startDateInput" onchange="renderDashboard()" class="bg-slate-900 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 border border-slate-700 focus:outline-none focus:border-cyan-400">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="text-[10px] text-slate-400 uppercase font-mono mb-1">To</label>
+                        <input type="date" id="endDateInput" onchange="renderDashboard()" class="bg-slate-900 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 border border-slate-700 focus:outline-none focus:border-cyan-400">
+                    </div>
+                </div>
+
+                <!-- Reset Filter Btn -->
+                <button onclick="resetFilters()" class="self-end p-2 text-slate-400 hover:text-cyan-400 transition" title="Reset Filters">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Key Metrics Cards -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Total MAWB Card -->
+            <div class="glass-card glass-card-glow rounded-xl p-4 border-l-4 border-l-cyan-400 relative">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs uppercase font-mono text-slate-400">Total MAWB Logged</span>
+                    <i class="fa-solid fa-boxes-packing text-cyan-400 text-lg"></i>
+                </div>
+                <div id="statTotalShipments" class="text-3xl font-extrabold text-white font-mono neon-text-cyan">0</div>
+                <p id="statTimeSubtext" class="text-[11px] text-slate-400 mt-1">In selected time window</p>
+            </div>
+
+            <!-- Top Airline -->
+            <div class="glass-card glass-card-glow rounded-xl p-4 border-l-4 border-l-pink-500 relative">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs uppercase font-mono text-slate-400">Top Airline</span>
+                    <i class="fa-solid fa-plane text-pink-400 text-lg"></i>
+                </div>
+                <div id="statTopAirline" class="text-xl font-bold text-white truncate">--</div>
+                <p id="statTopAirlineCount" class="text-[11px] text-slate-400 mt-1">0 shipments</p>
+            </div>
+
+            <!-- Top Origin -->
+            <div class="glass-card glass-card-glow rounded-xl p-4 border-l-4 border-l-purple-500 relative">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs uppercase font-mono text-slate-400">Top Origin Airport</span>
+                    <i class="fa-solid fa-plane-departure text-purple-400 text-lg"></i>
+                </div>
+                <div id="statTopOrigin" class="text-xl font-bold text-white truncate">--</div>
+                <p id="statTopOriginCount" class="text-[11px] text-slate-400 mt-1">0 outbound shipments</p>
+            </div>
+
+            <!-- Top Destination -->
+            <div class="glass-card glass-card-glow rounded-xl p-4 border-l-4 border-l-green-400 relative">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs uppercase font-mono text-slate-400">Top Destination</span>
+                    <i class="fa-solid fa-plane-arrival text-green-400 text-lg"></i>
+                </div>
+                <div id="statTopDestination" class="text-xl font-bold text-white truncate">--</div>
+                <p id="statTopDestCount" class="text-[11px] text-slate-400 mt-1">0 inbound shipments</p>
+            </div>
+        </section>
+
+        <!-- Interactive Global Air Cargo Route Map Section -->
+        <section class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3 relative">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-400">
+                        <i class="fa-solid fa-earth-americas text-base animate-pulse"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-white tracking-wide">Global Air Freight Route Map</h3>
+                        <p class="text-xs text-slate-400">Interactive geographic visualization of origin & destination trade lanes</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4 text-xs font-mono">
+                    <div class="flex items-center gap-1.5 text-purple-300">
+                        <span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block shadow-[0_0_8px_#9d4edd]"></span> Origin Pin
+                    </div>
+                    <div class="flex items-center gap-1.5 text-green-300">
+                        <span class="w-2.5 h-2.5 rounded-full bg-green-400 inline-block shadow-[0_0_8px_#00ff66]"></span> Destination Pin
+                    </div>
+                    <button onclick="resetMapView()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition text-[11px]">
+                        <i class="fa-solid fa-compress-arrows-alt mr-1"></i> Reset Zoom
+                    </button>
+                </div>
+            </div>
+
+            <!-- Leaflet Map Canvas Container -->
+            <div class="relative w-full h-80 sm:h-96 rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                <div id="globalMapContainer" class="w-full h-full z-10"></div>
+                <!-- Map Overlay Legend Overlay -->
+                <div class="absolute bottom-3 left-3 z-20 bg-slate-950/85 backdrop-blur-md px-3 py-2 rounded-lg border border-slate-800 text-[11px] font-mono text-slate-300 pointer-events-none">
+                    <div class="text-cyan-400 font-semibold mb-1"><i class="fa-solid fa-plane text-xs mr-1"></i> Active Routes: <span id="mapActiveRoutesCount">0</span></div>
+                    <div class="text-slate-400 text-[10px]">Click markers or routes for flight details</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Analytics Visual Report Section (Charts Grid) -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- Chart 1: Shipment Volume Timeline -->
+            <div class="glass-card rounded-2xl p-5 border border-slate-800 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-cyan-400"></i>
+                        <h3 class="font-bold text-sm text-white tracking-wide">Shipment Daily Volume Trend</h3>
+                    </div>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800">Timeline</span>
+                </div>
+                <div class="relative h-64 w-full">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 2: Airline Breakdown -->
+            <div class="glass-card rounded-2xl p-5 border border-slate-800 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-pink-400"></i>
+                        <h3 class="font-bold text-sm text-white tracking-wide">Airline Distribution</h3>
+                    </div>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-pink-950/80 text-pink-300 border border-pink-800">Carrier Share</span>
+                </div>
+                <div class="relative h-64 w-full flex items-center justify-center">
+                    <canvas id="airlineChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 3: Origin Airports Breakdown -->
+            <div class="glass-card rounded-2xl p-5 border border-slate-800 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-plane-departure text-purple-400"></i>
+                        <h3 class="font-bold text-sm text-white tracking-wide">Origin Traffic Summary</h3>
+                    </div>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800">Origins</span>
+                </div>
+                <div class="relative h-64 w-full">
+                    <canvas id="originChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 4: Destination Airports Breakdown -->
+            <div class="glass-card rounded-2xl p-5 border border-slate-800 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-plane-arrival text-green-400"></i>
+                        <h3 class="font-bold text-sm text-white tracking-wide">Destination Traffic Summary</h3>
+                    </div>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-green-950/80 text-green-300 border border-green-800">Destinations</span>
+                </div>
+                <div class="relative h-64 w-full">
+                    <canvas id="destinationChart"></canvas>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Detailed Shipment Table Section -->
+        <section class="glass-card rounded-2xl p-5 border border-slate-800 space-y-4">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+                <div>
+                    <h3 class="font-bold text-base text-white flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-cyan-400"></i> Master Airway Bill Shipment Log
+                    </h3>
+                    <p class="text-xs text-slate-400">Real-time log entries with exact system creation timestamps</p>
+                </div>
+
+                <!-- Search and Actions -->
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <div class="relative w-full md:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-500"></i>
+                        <input type="text" id="searchInput" oninput="renderDashboard()" placeholder="Search MAWB, Airline, Port..." class="w-full bg-slate-900/90 text-xs rounded-lg pl-8 pr-3 py-2 border border-slate-700 text-slate-200 focus:outline-none focus:border-cyan-400">
+                    </div>
+                    <button onclick="clearAllData()" class="px-3 py-2 text-xs font-semibold bg-red-950/40 text-red-400 border border-red-800/60 rounded-lg hover:bg-red-900/50 transition flex items-center gap-1.5 no-print">
+                        <i class="fa-solid fa-trash-can"></i> Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-900/80 text-slate-400 font-mono uppercase text-[11px] border-b border-slate-800">
+                        <tr>
+                            <th class="p-3">MAWB Number</th>
+                            <th class="p-3">Shipment Date</th>
+                            <th class="p-3">Airline</th>
+                            <th class="p-3">Origin</th>
+                            <th class="p-3">Destination</th>
+                            <th class="p-3">Created Timestamp</th>
+                            <th class="p-3 text-right no-print">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shipmentTableBody" class="divide-y divide-slate-800/60 text-slate-300">
+                        <!-- Rows rendered dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State Message -->
+            <div id="emptyState" class="hidden text-center py-12 space-y-3">
+                <div class="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 text-slate-600 flex items-center justify-center mx-auto text-xl">
+                    <i class="fa-solid fa-plane-slash"></i>
+                </div>
+                <p class="text-sm font-medium text-slate-400">No shipments found matching the selected range or search term.</p>
+                <button onclick="toggleModal('shipmentModal', true)" class="text-xs text-cyan-400 hover:underline">Log a new shipment now &rarr;</button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Log Shipment Modal -->
+    <div id="shipmentModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden p-4">
+        <div class="glass-card rounded-2xl w-full max-w-lg border border-cyan-500/30 p-6 space-y-5 relative shadow-[0_0_30px_rgba(0,243,255,0.2)]">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-file-circle-plus text-cyan-400 text-lg"></i>
+                    <h3 class="font-bold text-base text-white">Log Air Freight Shipment</h3>
+                </div>
+                <button onclick="toggleModal('shipmentModal', false)" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Form -->
+            <form id="shipmentForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-mono uppercase text-slate-400 mb-1">Master Airway Bill (MAWB) Number *</label>
+                    <div class="relative">
+                        <input type="text" id="mawbInput" required placeholder="e.g. 160-12345678" class="w-full bg-slate-900 text-sm rounded-lg px-3.5 py-2.5 border border-slate-700 text-white font-mono focus:outline-none focus:border-cyan-400">
+                        <span class="absolute right-3 top-2.5 text-[10px] text-slate-500 font-mono">XXX-XXXXXXXX</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-1">3-digit airline prefix + 8-digit serial number format recommended.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-mono uppercase text-slate-400 mb-1">Shipment Date *</label>
+                        <input type="date" id="shipmentDateInput" required class="w-full bg-slate-900 text-sm rounded-lg px-3.5 py-2.5 border border-slate-700 text-white focus:outline-none focus:border-cyan-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono uppercase text-slate-400 mb-1">Airline Carrier *</label>
+                        <input type="text" id="airlineInput" required list="airlineSuggestions" placeholder="e.g. Cathay Cargo" class="w-full bg-slate-900 text-sm rounded-lg px-3.5 py-2.5 border border-slate-700 text-white focus:outline-none focus:border-cyan-400">
+                        <datalist id="airlineSuggestions">
+                            <option value="Cathay Cargo"></option>
+                            <option value="Emirates SkyCargo"></option>
+                            <option value="Lufthansa Cargo"></option>
+                            <option value="Qatar Airways Cargo"></option>
+                            <option value="FedEx Express"></option>
+                            <option value="Singapore Airlines Cargo"></option>
+                            <option value="Korean Air Cargo"></option>
+                            <option value="DHL Aviation"></option>
+                        </datalist>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-mono uppercase text-slate-400 mb-1">Origin (Airport / City) *</label>
+                        <input type="text" id="originInput" required list="airportSuggestions" placeholder="e.g. HKG (Hong Kong)" class="w-full bg-slate-900 text-sm rounded-lg px-3.5 py-2.5 border border-slate-700 text-white uppercase font-mono focus:outline-none focus:border-cyan-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono uppercase text-slate-400 mb-1">Destination (Airport / City) *</label>
+                        <input type="text" id="destinationInput" required list="airportSuggestions" placeholder="e.g. FRA (Frankfurt)" class="w-full bg-slate-900 text-sm rounded-lg px-3.5 py-2.5 border border-slate-700 text-white uppercase font-mono focus:outline-none focus:border-cyan-400">
+                    </div>
+                    <datalist id="airportSuggestions">
+                        <option value="HKG - Hong Kong"></option>
+                        <option value="FRA - Frankfurt"></option>
+                        <option value="LHR - London Heathrow"></option>
+                        <option value="JFK - New York"></option>
+                        <option value="PVG - Shanghai Pudong"></option>
+                        <option value="SIN - Singapore"></option>
+                        <option value="DXB - Dubai"></option>
+                        <option value="ORD - Chicago"></option>
+                        <option value="NRT - Tokyo Narita"></option>
+                        <option value="AMS - Amsterdam"></option>
+                    </datalist>
+                </div>
+
+                <!-- Auto timestamp notice -->
+                <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 text-[11px] text-slate-400 flex items-center gap-2">
+                    <i class="fa-solid fa-clock text-cyan-400"></i>
+                    <span>Entry will be automatically tagged with system creation timestamp upon logging.</span>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button type="button" onclick="toggleModal('shipmentModal', false)" class="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300">Cancel</button>
+                    <button type="submit" class="neon-btn-cyan px-5 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider">Save Shipment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Toast Message -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 glass-card border border-cyan-400/50 px-4 py-3 rounded-xl shadow-[0_0_15px_rgba(0,243,255,0.3)] hidden flex items-center gap-3">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-cyan-400 text-base"></i>
+        <span id="toastMessage" class="text-xs text-white font-medium">Notification message</span>
+    </div>
+
+    <!-- Single Shipment Route Map Modal -->
+    <div id="singleRouteModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center hidden p-4">
+        <div class="glass-card rounded-2xl w-full max-w-3xl border border-cyan-500/40 p-5 sm:p-6 space-y-4 relative shadow-[0_0_35px_rgba(0,243,255,0.25)]">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-pink-500 p-0.5 flex items-center justify-center">
+                        <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-cyan-400">
+                            <i class="fa-solid fa-route text-base"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 id="modalRouteTitle" class="font-bold text-base text-white flex items-center gap-2">
+                            Flight Route Visualization
+                        </h3>
+                        <p id="modalRouteSubtitle" class="text-xs text-slate-400 font-mono">MAWB Details & Geodesic Arc</p>
+                    </div>
+                </div>
+                <button onclick="toggleModal('singleRouteModal', false)" class="text-slate-400 hover:text-white transition p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Route Stats Info Strip -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs">
+                <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                    <div class="text-[10px] text-slate-400 uppercase">MAWB Number</div>
+                    <div id="routeModalMawb" class="font-bold text-cyan-400 truncate">--</div>
+                </div>
+                <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                    <div class="text-[10px] text-slate-400 uppercase">Carrier Airline</div>
+                    <div id="routeModalAirline" class="font-bold text-white truncate">--</div>
+                </div>
+                <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                    <div class="text-[10px] text-slate-400 uppercase">Flight Path</div>
+                    <div id="routeModalPath" class="font-bold text-pink-400 truncate">--</div>
+                </div>
+                <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                    <div class="text-[10px] text-slate-400 uppercase">Flight Distance</div>
+                    <div id="routeModalDistance" class="font-bold text-green-400 truncate">--</div>
+                </div>
+            </div>
+
+            <!-- Map Display Window -->
+            <div class="relative w-full h-80 sm:h-96 rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                <div id="singleMapContainer" class="w-full h-full z-10"></div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-between text-xs font-mono text-slate-400 pt-1">
+                <span><i class="fa-solid fa-circle-info text-cyan-400 mr-1"></i> Interactive Leaflet view with great-circle flight curve</span>
+                <button onclick="toggleModal('singleRouteModal', false)" class="neon-btn-cyan px-4 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider">
+                    Close Map
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Printable Summary Report Modal -->
+    <div id="printReportModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md overflow-y-auto hidden p-2 sm:p-6">
+        <div id="printReportContainer" class="glass-card rounded-2xl w-full max-w-5xl mx-auto border border-cyan-500/30 p-6 sm:p-8 space-y-6 relative my-4">
+            
+            <!-- Modal Print Controls (Hidden when printing) -->
+            <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-4 gap-4 no-print">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-400">
+                        <i class="fa-solid fa-print text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-white">Shipia Air Cargo — Print / PDF Report Preview</h3>
+                        <p class="text-xs text-slate-400">Review generated summary analytics before printing or saving as PDF</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="executePrint()" class="neon-btn-cyan px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-print"></i> Print / Save as PDF
+                    </button>
+                    <button onclick="openPrintWindow()" class="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5" title="Open in separate printable window if iframe printing is blocked">
+                        <i class="fa-solid fa-arrow-up-right-from-square text-amber-400"></i> External Window
+                    </button>
+                    <button onclick="toggleModal('printReportModal', false)" class="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition">
+                        Close
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dynamic Printable Content Body -->
+            <div id="printReportContent" class="space-y-6 text-slate-200">
+                <!-- Content will be rendered dynamically by JS -->
+            </div>
+
+            <!-- Footer note for printout -->
+            <div class="pt-6 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+                <span>Shipia Air Cargo Freight Intelligence System</span>
+                <span id="printGeneratedTimestamp"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Toast Message -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 glass-card border border-cyan-400/50 px-4 py-3 rounded-xl shadow-[0_0_15px_rgba(0,243,255,0.3)] hidden flex items-center gap-3">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-cyan-400 text-base"></i>
+        <span id="toastMessage" class="text-xs text-white font-medium">Notification message</span>
+    </div>
+
+    <script>
+        // State management
+        let shipments = JSON.parse(localStorage.getItem('aero_neon_shipments')) || [];
+        
+        // Leaflet Global & Modal Map Instances
+        let globalMap = null;
+        let singleMap = null;
+        let globalMapLayerGroup = null;
+
+        // Chart instances
+        let timelineChartInstance = null;
+        let airlineChartInstance = null;
+        let originChartInstance = null;
+        let destinationChartInstance = null;
+
+        // Comprehensive IATA Airport Geocoding Database
+        const AIRPORT_DATABASE = {
+            'HKG': { name: 'Hong Kong International Airport', city: 'Hong Kong', lat: 22.3080, lng: 113.9185 },
+            'FRA': { name: 'Frankfurt Airport', city: 'Frankfurt', lat: 50.0379, lng: 8.5622 },
+            'LHR': { name: 'London Heathrow Airport', city: 'London', lat: 51.4700, lng: -0.4543 },
+            'JFK': { name: 'John F. Kennedy Intl Airport', city: 'New York', lat: 40.6413, lng: -73.7781 },
+            'PVG': { name: 'Shanghai Pudong Intl Airport', city: 'Shanghai', lat: 31.1443, lng: 121.8083 },
+            'SIN': { name: 'Singapore Changi Airport', city: 'Singapore', lat: 1.3644, lng: 103.9915 },
+            'DXB': { name: 'Dubai International Airport', city: 'Dubai', lat: 25.2532, lng: 55.3657 },
+            'ORD': { name: 'Chicago O\'Hare Intl Airport', city: 'Chicago', lat: 41.9742, lng: -87.9073 },
+            'NRT': { name: 'Tokyo Narita Intl Airport', city: 'Tokyo', lat: 35.7720, lng: 140.3929 },
+            'AMS': { name: 'Amsterdam Airport Schiphol', city: 'Amsterdam', lat: 52.3105, lng: 4.7683 },
+            'ICN': { name: 'Incheon International Airport', city: 'Seoul', lat: 37.4602, lng: 126.4407 },
+            'LAX': { name: 'Los Angeles International Airport', city: 'Los Angeles', lat: 33.9416, lng: -118.4085 },
+            'CDG': { name: 'Paris Charles de Gaulle Airport', city: 'Paris', lat: 49.0097, lng: 2.5479 },
+            'SYD': { name: 'Sydney Kingsford Smith Airport', city: 'Sydney', lat: -33.9399, lng: 151.1753 },
+            'MEM': { name: 'Memphis International Airport', city: 'Memphis', lat: 35.0424, lng: -89.9767 },
+            'DOH': { name: 'Hamad International Airport', city: 'Doha', lat: 25.2731, lng: 51.6081 },
+            'TPE': { name: 'Taiwan Taoyuan Intl Airport', city: 'Taipei', lat: 25.0797, lng: 121.2342 },
+            'CAN': { name: 'Guangzhou Baiyun Intl Airport', city: 'Guangzhou', lat: 23.3924, lng: 113.2988 },
+            'MIA': { name: 'Miami International Airport', city: 'Miami', lat: 25.7959, lng: -80.2870 },
+            'HND': { name: 'Tokyo Haneda Airport', city: 'Tokyo', lat: 35.5494, lng: 139.7798 }
+        };
+
+        // Colors palette for neon aesthetics
+        const neonColors = [
+            '#00f3ff', // Cyan
+            '#ff007f', // Pink
+            '#9d4edd', // Purple
+            '#00ff66', // Lime Green
+            '#ffbe0b', // Yellow
+            '#3a86ef', // Blue
+            '#ff5500', // Orange
+            '#e0aaff'  // Lavender
+        ];
+
+        // Initialization
+        window.onload = function() {
+            // Set default date input in modal to today
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('shipmentDateInput').value = todayStr;
+
+            // If empty, generate initial sample data for nice preview
+            if (shipments.length === 0) {
+                seedSampleData(false);
+            }
+
+            initGlobalMap();
+            renderDashboard();
+        };
+
+        // Helper: Resolve Airport Code or string to Lat/Lng location
+        function getAirportCoordinates(locationStr) {
+            if (!locationStr) return { lat: 20, lng: 0, code: 'UNKNOWN', name: 'Unknown' };
+
+            const cleanStr = locationStr.trim().toUpperCase();
+            // Match 3-letter IATA code if present
+            const match = cleanStr.match(/\b([A-Z]{3})\b/);
+            const code = match ? match[1] : cleanStr.substring(0, 3);
+
+            if (AIRPORT_DATABASE[code]) {
+                return {
+                    code: code,
+                    name: AIRPORT_DATABASE[code].name,
+                    city: AIRPORT_DATABASE[code].city,
+                    lat: AIRPORT_DATABASE[code].lat,
+                    lng: AIRPORT_DATABASE[code].lng
+                };
+            }
+
+            // Fallback hashing mechanism so any custom text resolves consistently
+            let hash = 0;
+            for (let i = 0; i < cleanStr.length; i++) {
+                hash = cleanStr.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const lat = ((hash % 120) - 60) * 0.8;
+            const lng = (((hash * 3) % 360) - 180) * 0.9;
+
+            return {
+                code: code,
+                name: `${cleanStr} Airport`,
+                city: cleanStr,
+                lat: parseFloat(lat.toFixed(4)),
+                lng: parseFloat(lng.toFixed(4))
+            };
+        }
+
+        // Calculate Distance between two Lat/Lng points (Haversine formula in KM & Nautical Miles)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const km = Math.round(R * c);
+            const nm = Math.round(km * 0.539957);
+            return { km, nm };
+        }
+
+        // Create curved geodesic arc path points between Origin and Destination
+        function generateArcPoints(start, end, numPoints = 30) {
+            const points = [];
+            const lat1 = start.lat, lng1 = start.lng;
+            const lat2 = end.lat, lng2 = end.lng;
+
+            // Distance based height curve factor
+            const dist = Math.sqrt(Math.pow(lat2 - lat1, 2) + Math.pow(lng2 - lng1, 2));
+            const arcFactor = Math.min(dist * 0.15, 25);
+
+            for (let i = 0; i <= numPoints; i++) {
+                const t = i / numPoints;
+                // Interpolate base lat/lng
+                const currentLat = lat1 + (lat2 - lat1) * t;
+                const currentLng = lng1 + (lng2 - lng1) * t;
+                // Parabolic altitude offset for curved line look
+                const offset = Math.sin(t * Math.PI) * arcFactor;
+
+                points.push([currentLat + offset, currentLng]);
+            }
+            return points;
+        }
+
+        // Initialize Dashboard Main Global Map
+        function initGlobalMap() {
+            if (globalMap) return;
+
+            // Create Leaflet map centered on global view
+            globalMap = L.map('globalMapContainer', {
+                center: [25, 10],
+                zoom: 2,
+                minZoom: 2,
+                maxZoom: 10,
+                zoomControl: true,
+                attributionControl: false
+            });
+
+            // CartoDB Dark Matter tile layer for dark neon theme
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(globalMap);
+
+            globalMapLayerGroup = L.layerGroup().addTo(globalMap);
+        }
+
+        function resetMapView() {
+            if (globalMap) {
+                globalMap.setView([25, 10], 2);
+            }
+        }
+
+        // Update Dashboard Global Map Markers & Flight Routes
+        function renderGlobalMap(data) {
+            if (!globalMap || !globalMapLayerGroup) return;
+
+            globalMapLayerGroup.clearLayers();
+            document.getElementById('mapActiveRoutesCount').textContent = data.length;
+
+            if (data.length === 0) return;
+
+            const bounds = [];
+            const processedRoutes = new Set();
+
+            data.forEach((s, idx) => {
+                const orig = getAirportCoordinates(s.origin);
+                const dest = getAirportCoordinates(s.destination);
+
+                bounds.push([orig.lat, orig.lng]);
+                bounds.push([dest.lat, dest.lng]);
+
+                // Create custom neon pulse icon markers
+                const originIcon = L.divIcon({
+                    className: 'custom-map-icon',
+                    html: `<div class="map-marker-origin" title="Origin: ${orig.code}"></div>`,
+                    iconSize: [14, 14],
+                    iconAnchor: [7, 7]
+                });
+
+                const destIcon = L.divIcon({
+                    className: 'custom-map-icon',
+                    html: `<div class="map-marker-dest" title="Destination: ${dest.code}"></div>`,
+                    iconSize: [14, 14],
+                    iconAnchor: [7, 7]
+                });
+
+                // Add Origin Marker
+                const origMarker = L.marker([orig.lat, orig.lng], { icon: originIcon }).addTo(globalMapLayerGroup);
+                origMarker.bindPopup(`
+                    <div style="font-family: monospace;">
+                        <strong style="color: #9d4edd; font-size: 13px;">ORIGIN: ${orig.code}</strong><br/>
+                        <span style="color: #ffffff;">${orig.name}</span><br/>
+                        <span style="color: #94a3b8; font-size: 10px;">City: ${orig.city}</span>
+                    </div>
+                `);
+
+                // Add Destination Marker
+                const destMarker = L.marker([dest.lat, dest.lng], { icon: destIcon }).addTo(globalMapLayerGroup);
+                destMarker.bindPopup(`
+                    <div style="font-family: monospace;">
+                        <strong style="color: #00ff66; font-size: 13px;">DESTINATION: ${dest.code}</strong><br/>
+                        <span style="color: #ffffff;">${dest.name}</span><br/>
+                        <span style="color: #94a3b8; font-size: 10px;">City: ${dest.city}</span>
+                    </div>
+                `);
+
+                // Flight Arc Polyline
+                const routeKey = `${orig.code}->${dest.code}`;
+                const color = neonColors[idx % neonColors.length];
+                const arcPoints = generateArcPoints(orig, dest);
+
+                const polyline = L.polyline(arcPoints, {
+                    color: color,
+                    weight: 2,
+                    opacity: 0.8,
+                    dashArray: '6, 6'
+                }).addTo(globalMapLayerGroup);
+
+                const dist = calculateDistance(orig.lat, orig.lng, dest.lat, dest.lng);
+
+                polyline.bindPopup(`
+                    <div style="font-family: monospace; line-height: 1.5;">
+                        <div style="color: #00f3ff; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px; margin-bottom: 4px;">
+                            <i class="fa-solid fa-plane"></i> ${escapeHtml(s.airline)}
+                        </div>
+                        <div><strong>MAWB:</strong> <span style="color: #00f3ff;">${escapeHtml(s.mawb)}</span></div>
+                        <div><strong>Route:</strong> ${orig.code} &rarr; ${dest.code}</div>
+                        <div><strong>Distance:</strong> ${dist.km.toLocaleString()} km (${dist.nm.toLocaleString()} NM)</div>
+                        <div><strong>Date:</strong> ${escapeHtml(s.shipmentDate)}</div>
+                        <div style="margin-top: 6px;">
+                            <button onclick="openSingleShipmentMap('${s.id}')" style="background: rgba(0,243,255,0.2); border: 1px solid #00f3ff; color: #00f3ff; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; width: 100%;">
+                                Inspect Flight Route
+                            </button>
+                        </div>
+                    </div>
+                `);
+            });
+
+            // Adjust viewport smoothly if valid points exist
+            if (bounds.length > 0 && data.length < 15) {
+                try {
+                    globalMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 5 });
+                } catch(e) {
+                    // Fallback
+                }
+            }
+        }
+
+        // Open Individual Shipment Route Map Modal
+        function openSingleShipmentMap(id) {
+            const shipment = shipments.find(s => s.id === id);
+            if (!shipment) return;
+
+            const orig = getAirportCoordinates(shipment.origin);
+            const dest = getAirportCoordinates(shipment.destination);
+            const dist = calculateDistance(orig.lat, orig.lng, dest.lat, dest.lng);
+
+            document.getElementById('modalRouteTitle').innerHTML = `<i class="fa-solid fa-plane text-cyan-400"></i> ${escapeHtml(shipment.origin)} &rarr; ${escapeHtml(shipment.destination)}`;
+            document.getElementById('routeModalMawb').textContent = shipment.mawb;
+            document.getElementById('routeModalAirline').textContent = shipment.airline;
+            document.getElementById('routeModalPath').textContent = `${orig.code} -> ${dest.code}`;
+            document.getElementById('routeModalDistance').textContent = `${dist.km.toLocaleString()} km (${dist.nm.toLocaleString()} NM)`;
+
+            toggleModal('singleRouteModal', true);
+
+            // Initialize or render single modal map
+            setTimeout(() => {
+                if (!singleMap) {
+                    singleMap = L.map('singleMapContainer', {
+                        center: [20, 0],
+                        zoom: 2,
+                        zoomControl: true,
+                        attributionControl: false
+                    });
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                        subdomains: 'abcd',
+                        maxZoom: 19
+                    }).addTo(singleMap);
+                } else {
+                    singleMap.eachLayer((layer) => {
+                        if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                            singleMap.removeLayer(layer);
+                        }
+                    });
+                }
+
+                // Invalidate size to calculate correct dimensions inside modal
+                singleMap.invalidateSize();
+
+                const originIcon = L.divIcon({
+                    className: 'custom-map-icon',
+                    html: `<div class="map-marker-origin"></div>`,
+                    iconSize: [16, 16],
+                    iconAnchor: [8, 8]
+                });
+
+                const destIcon = L.divIcon({
+                    className: 'custom-map-icon',
+                    html: `<div class="map-marker-dest"></div>`,
+                    iconSize: [16, 16],
+                    iconAnchor: [8, 8]
+                });
+
+                const origMarker = L.marker([orig.lat, orig.lng], { icon: originIcon }).addTo(singleMap);
+                origMarker.bindPopup(`<b>ORIGIN: ${orig.code}</b><br/>${orig.name}<br/>${orig.city}`).openPopup();
+
+                const destMarker = L.marker([dest.lat, dest.lng], { icon: destIcon }).addTo(singleMap);
+                destMarker.bindPopup(`<b>DESTINATION: ${dest.code}</b><br/>${dest.name}<br/>${dest.city}`);
+
+                const arcPoints = generateArcPoints(orig, dest);
+                const polyline = L.polyline(arcPoints, {
+                    color: '#00f3ff',
+                    weight: 3,
+                    opacity: 0.9,
+                    dashArray: '8, 8'
+                }).addTo(singleMap);
+
+                singleMap.fitBounds([[orig.lat, orig.lng], [dest.lat, dest.lng]], { padding: [60, 60] });
+            }, 200);
+        }
+
+        // Modal Toggle Helper
+        function toggleModal(modalId, show) {
+            const modal = document.getElementById(modalId);
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        // Custom Toast Notification (No alert() used)
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = message;
+            if (isError) {
+                toastIcon.className = "fa-solid fa-circle-exclamation text-pink-500 text-base";
+                toast.style.borderColor = "rgba(255, 0, 127, 0.6)";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-check text-cyan-400 text-base";
+                toast.style.borderColor = "rgba(0, 243, 255, 0.6)";
+            }
+
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Form Submission logic
+        function handleFormSubmit(event) {
+            event.preventDefault();
+
+            const mawb = document.getElementById('mawbInput').value.trim();
+            const shipmentDate = document.getElementById('shipmentDateInput').value;
+            const airline = document.getElementById('airlineInput').value.trim();
+            const origin = document.getElementById('originInput').value.trim().toUpperCase();
+            const destination = document.getElementById('destinationInput').value.trim().toUpperCase();
+
+            // Creation timestamp logged automatically
+            const now = new Date();
+            const createdTimestamp = now.toISOString();
+
+            const newShipment = {
+                id: 'shp_' + Date.now(),
+                mawb,
+                shipmentDate,
+                airline,
+                origin,
+                destination,
+                createdTimestamp
+            };
+
+            shipments.unshift(newShipment);
+            saveToLocalStorage();
+
+            // Reset form & close modal
+            document.getElementById('shipmentForm').reset();
+            document.getElementById('shipmentDateInput').value = new Date().toISOString().split('T')[0];
+            toggleModal('shipmentModal', false);
+
+            showToast(`Shipment ${mawb} successfully logged!`);
+            renderDashboard();
+        }
+
+        function handleTimeRangeChange() {
+            const rangeSelect = document.getElementById('timeRangeSelect').value;
+            const customContainer = document.getElementById('customDateContainer');
+
+            if (rangeSelect === 'CUSTOM') {
+                customContainer.classList.remove('hidden');
+            } else {
+                customContainer.classList.add('hidden');
+            }
+            renderDashboard();
+        }
+
+        function resetFilters() {
+            document.getElementById('timeRangeSelect').value = 'ALL';
+            document.getElementById('customDateContainer').classList.add('hidden');
+            document.getElementById('searchInput').value = '';
+            renderDashboard();
+        }
+
+        function getFilteredShipments() {
+            const rangeType = document.getElementById('timeRangeSelect').value;
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            const now = new Date();
+
+            return shipments.filter(item => {
+                // 1. Date Range Filter
+                const itemDate = new Date(item.shipmentDate);
+                let passDate = true;
+
+                if (rangeType === 'TODAY') {
+                    const todayStr = now.toISOString().split('T')[0];
+                    passDate = item.shipmentDate === todayStr;
+                } else if (rangeType === '7DAYS') {
+                    const sevenDaysAgo = new Date();
+                    sevenDaysAgo.setDate(now.getDate() - 7);
+                    passDate = itemDate >= sevenDaysAgo;
+                } else if (rangeType === '30DAYS') {
+                    const thirtyDaysAgo = new Date();
+                    thirtyDaysAgo.setDate(now.getDate() - 30);
+                    passDate = itemDate >= thirtyDaysAgo;
+                } else if (rangeType === 'THIS_MONTH') {
+                    passDate = itemDate.getMonth() === now.getMonth() && itemDate.getFullYear() === now.getFullYear();
+                } else if (rangeType === 'CUSTOM') {
+                    const startVal = document.getElementById('startDateInput').value;
+                    const endVal = document.getElementById('endDateInput').value;
+                    if (startVal) {
+                        passDate = passDate && (itemDate >= new Date(startVal));
+                    }
+                    if (endVal) {
+                        passDate = passDate && (itemDate <= new Date(endVal + 'T23:59:59'));
+                    }
+                }
+
+                // 2. Search Term Filter
+                let passSearch = true;
+                if (searchTerm) {
+                    passSearch = item.mawb.toLowerCase().includes(searchTerm) ||
+                                 item.airline.toLowerCase().includes(searchTerm) ||
+                                 item.origin.toLowerCase().includes(searchTerm) ||
+                                 item.destination.toLowerCase().includes(searchTerm);
+                }
+
+                return passDate && passSearch;
+            });
+        }
+
+        function renderDashboard() {
+            const filteredData = getFilteredShipments();
+
+            // 1. Update Metrics Cards
+            document.getElementById('statTotalShipments').textContent = filteredData.length;
+
+            // Aggregations
+            const airlineCounts = {};
+            const originCounts = {};
+            const destCounts = {};
+
+            filteredData.forEach(s => {
+                airlineCounts[s.airline] = (airlineCounts[s.airline] || 0) + 1;
+                originCounts[s.origin] = (originCounts[s.origin] || 0) + 1;
+                destCounts[s.destination] = (destCounts[s.destination] || 0) + 1;
+            });
+
+            const topAirlineKey = getTopKey(airlineCounts);
+            const topOriginKey = getTopKey(originCounts);
+            const topDestKey = getTopKey(destCounts);
+
+            document.getElementById('statTopAirline').textContent = topAirlineKey || '--';
+            document.getElementById('statTopAirlineCount').textContent = topAirlineKey ? `${airlineCounts[topAirlineKey]} shipments logged` : '0 shipments';
+
+            document.getElementById('statTopOrigin').textContent = topOriginKey || '--';
+            document.getElementById('statTopOriginCount').textContent = topOriginKey ? `${originCounts[topOriginKey]} outbound shipments` : '0 shipments';
+
+            document.getElementById('statTopDestination').textContent = topDestKey || '--';
+            document.getElementById('statTopDestCount').textContent = topDestKey ? `${destCounts[topDestKey]} inbound shipments` : '0 shipments';
+
+            // 2. Render Table Rows with Interactive Map Buttons
+            const tbody = document.getElementById('shipmentTableBody');
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+
+            if (filteredData.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                filteredData.forEach(s => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-800/40 transition";
+                    
+                    const formattedCreated = new Date(s.createdTimestamp).toLocaleString(undefined, {
+                        year: 'numeric', month: 'short', day: 'numeric',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit'
+                    });
+
+                    tr.innerHTML = `
+                        <td class="p-3 font-mono text-cyan-300 font-semibold">${escapeHtml(s.mawb)}</td>
+                        <td class="p-3 font-mono">${escapeHtml(s.shipmentDate)}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 font-medium text-white">${escapeHtml(s.airline)}</span></td>
+                        <td class="p-3 font-mono text-purple-300 cursor-pointer hover:underline" onclick="openSingleShipmentMap('${s.id}')" title="Click to view origin map">
+                            <i class="fa-solid fa-plane-departure mr-1 text-[10px] text-purple-400"></i>${escapeHtml(s.origin)}
+                        </td>
+                        <td class="p-3 font-mono text-green-300 cursor-pointer hover:underline" onclick="openSingleShipmentMap('${s.id}')" title="Click to view destination map">
+                            <i class="fa-solid fa-plane-arrival mr-1 text-[10px] text-green-400"></i>${escapeHtml(s.destination)}
+                        </td>
+                        <td class="p-3 font-mono text-slate-400 text-[11px]">${formattedCreated}</td>
+                        <td class="p-3 text-right no-print flex items-center justify-end gap-2">
+                            <button onclick="openSingleShipmentMap('${s.id}')" class="px-2 py-1 rounded bg-slate-800 hover:bg-cyan-950/80 text-cyan-400 border border-slate-700 hover:border-cyan-500 transition text-[11px] flex items-center gap-1" title="View Interactive Global Route Map">
+                                <i class="fa-solid fa-earth-americas text-xs"></i> Map
+                            </button>
+                            <button onclick="deleteShipment('${s.id}')" class="text-slate-500 hover:text-pink-400 transition p-1" title="Delete Entry">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // 3. Render Dashboard Global Flight Map & Charts
+            renderGlobalMap(filteredData);
+            renderCharts(filteredData, { airlineCounts, originCounts, destCounts });
+        }
+
+        function getTopKey(obj) {
+            let topKey = null;
+            let maxVal = -1;
+            for (const [k, v] of Object.entries(obj)) {
+                if (v > maxVal) {
+                    maxVal = v;
+                    topKey = k;
+                }
+            }
+            return topKey;
+        }
+
+        function renderCharts(data, aggregated) {
+            // Chart global dark settings
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.font.family = 'Inter, sans-serif';
+
+            // 1. Timeline Chart (Shipments over time)
+            const dateMap = {};
+            const sortedData = [...data].sort((a, b) => new Date(a.shipmentDate) - new Date(b.shipmentDate));
+            sortedData.forEach(s => {
+                dateMap[s.shipmentDate] = (dateMap[s.shipmentDate] || 0) + 1;
+            });
+
+            const timelineLabels = Object.keys(dateMap);
+            const timelineValues = Object.values(dateMap);
+
+            if (timelineChartInstance) timelineChartInstance.destroy();
+            const ctxTimeline = document.getElementById('timelineChart').getContext('2d');
+            
+            const cyanGradient = ctxTimeline.createLinearGradient(0, 0, 0, 200);
+            cyanGradient.addColorStop(0, 'rgba(0, 243, 255, 0.4)');
+            cyanGradient.addColorStop(1, 'rgba(0, 243, 255, 0.0)');
+
+            timelineChartInstance = new Chart(ctxTimeline, {
+                type: 'line',
+                data: {
+                    labels: timelineLabels.length ? timelineLabels : ['No Data'],
+                    datasets: [{
+                        label: 'Shipments',
+                        data: timelineValues.length ? timelineValues : [0],
+                        borderColor: '#00f3ff',
+                        borderWidth: 2,
+                        backgroundColor: cyanGradient,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#00f3ff',
+                        pointBorderColor: '#070b14',
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 300 },
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255, 255, 255, 0.05)' } },
+                        y: { 
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+
+            // 2. Airline Pie Chart
+            const airlineLabels = Object.keys(aggregated.airlineCounts);
+            const airlineValues = Object.values(aggregated.airlineCounts);
+
+            if (airlineChartInstance) airlineChartInstance.destroy();
+            const ctxAirline = document.getElementById('airlineChart').getContext('2d');
+            airlineChartInstance = new Chart(ctxAirline, {
+                type: 'pie',
+                data: {
+                    labels: airlineLabels.length ? airlineLabels : ['None'],
+                    datasets: [{
+                        data: airlineValues.length ? airlineValues : [1],
+                        backgroundColor: neonColors,
+                        borderColor: '#0f172a',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 300 },
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { boxWidth: 12, font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+
+            // 3. Origin Airport Bar Chart
+            const originLabels = Object.keys(aggregated.originCounts);
+            const originValues = Object.values(aggregated.originCounts);
+
+            if (originChartInstance) originChartInstance.destroy();
+            const ctxOrigin = document.getElementById('originChart').getContext('2d');
+            originChartInstance = new Chart(ctxOrigin, {
+                type: 'bar',
+                data: {
+                    labels: originLabels.length ? originLabels : ['None'],
+                    datasets: [{
+                        label: 'Outbound Shipments',
+                        data: originValues.length ? originValues : [0],
+                        backgroundColor: 'rgba(157, 78, 221, 0.8)',
+                        borderColor: '#9d4edd',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 300 },
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { 
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+
+            // 4. Destination Airport Bar Chart (Horizontal)
+            const destLabels = Object.keys(aggregated.destCounts);
+            const destValues = Object.values(aggregated.destCounts);
+
+            if (destinationChartInstance) destinationChartInstance.destroy();
+            const ctxDest = document.getElementById('destinationChart').getContext('2d');
+            destinationChartInstance = new Chart(ctxDest, {
+                type: 'bar',
+                data: {
+                    labels: destLabels.length ? destLabels : ['None'],
+                    datasets: [{
+                        label: 'Inbound Shipments',
+                        data: destValues.length ? destValues : [0],
+                        backgroundColor: 'rgba(0, 255, 102, 0.8)',
+                        borderColor: '#00ff66',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 300 },
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { 
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // Trigger print modal preparation
+        function triggerPrint() {
+            showToast('Generating printable summary report snapshot...');
+
+            // Extract high-res image data from active Chart.js canvas elements
+            const timelineImg = timelineChartInstance ? timelineChartInstance.toBase64Image() : '';
+            const airlineImg = airlineChartInstance ? airlineChartInstance.toBase64Image() : '';
+            const originImg = originChartInstance ? originChartInstance.toBase64Image() : '';
+            const destImg = destinationChartInstance ? destinationChartInstance.toBase64Image() : '';
+
+            const filteredData = getFilteredShipments();
+            const timeRangeText = document.getElementById('timeRangeSelect').options[document.getElementById('timeRangeSelect').selectedIndex].text;
+
+            // Generate HTML report structure for print
+            let tableRowsHtml = '';
+            filteredData.forEach(s => {
+                const formattedCreated = new Date(s.createdTimestamp).toLocaleString();
+                tableRowsHtml += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <td style="padding: 6px; font-family: monospace; color: #00f3ff; font-weight: bold;">${escapeHtml(s.mawb)}</td>
+                        <td style="padding: 6px; font-family: monospace;">${escapeHtml(s.shipmentDate)}</td>
+                        <td style="padding: 6px;">${escapeHtml(s.airline)}</td>
+                        <td style="padding: 6px; font-family: monospace; color: #d8b4fe;">${escapeHtml(s.origin)}</td>
+                        <td style="padding: 6px; font-family: monospace; color: #86efac;">${escapeHtml(s.destination)}</td>
+                        <td style="padding: 6px; font-family: monospace; color: #94a3b8; font-size: 10px;">${formattedCreated}</td>
+                    </tr>
+                `;
+            });
+
+            if (filteredData.length === 0) {
+                tableRowsHtml = `<tr><td colspan="6" style="padding: 16px; text-align: center; color: #64748b;">No shipments logged for this selection.</td></tr>`;
+            }
+
+            const totalCount = filteredData.length;
+            const topAirline = document.getElementById('statTopAirline').textContent;
+            const topOrigin = document.getElementById('statTopOrigin').textContent;
+            const topDest = document.getElementById('statTopDestination').textContent;
+
+            const reportHtml = `
+                <!-- Report Header -->
+                <div style="border-bottom: 2px solid #00f3ff; padding-bottom: 12px;" class="print-break-inside-avoid">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <h1 style="font-size: 22px; font-weight: bold; color: #ffffff; letter-spacing: 1px; margin: 0;">
+                                Shipia <span style="color: #00f3ff;">Air Cargo</span>
+                            </h1>
+                            <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Air Freight Master Airway Bill Analytics Summary Report</p>
+                        </div>
+                        <div style="text-align: right; font-family: monospace; font-size: 11px; color: #00f3ff;">
+                            <div>Filter: <strong>${escapeHtml(timeRangeText)}</strong></div>
+                            <div style="color: #94a3b8; margin-top: 2px;">Total Records: <strong>${totalCount}</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Executive Summary Cards -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px;" class="print-break-inside-avoid">
+                    <div style="background: rgba(15,23,42,0.8); border: 1px solid #00f3ff; border-radius: 8px; padding: 10px;">
+                        <div style="font-size: 10px; text-transform: uppercase; color: #94a3b8; font-family: monospace;">Total MAWB Logged</div>
+                        <div style="font-size: 20px; font-weight: bold; color: #00f3ff; font-family: monospace; margin-top: 4px;">${totalCount}</div>
+                    </div>
+                    <div style="background: rgba(15,23,42,0.8); border: 1px solid #ff007f; border-radius: 8px; padding: 10px;">
+                        <div style="font-size: 10px; text-transform: uppercase; color: #94a3b8; font-family: monospace;">Top Airline</div>
+                        <div style="font-size: 14px; font-weight: bold; color: #ffffff; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(topAirline)}</div>
+                    </div>
+                    <div style="background: rgba(15,23,42,0.8); border: 1px solid #9d4edd; border-radius: 8px; padding: 10px;">
+                        <div style="font-size: 10px; text-transform: uppercase; color: #94a3b8; font-family: monospace;">Top Origin Airport</div>
+                        <div style="font-size: 14px; font-weight: bold; color: #ffffff; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(topOrigin)}</div>
+                    </div>
+                    <div style="background: rgba(15,23,42,0.8); border: 1px solid #00ff66; border-radius: 8px; padding: 10px;">
+                        <div style="font-size: 10px; text-transform: uppercase; color: #94a3b8; font-family: monospace;">Top Destination</div>
+                        <div style="font-size: 14px; font-weight: bold; color: #ffffff; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(topDest)}</div>
+                    </div>
+                </div>
+
+                <!-- Visual Charts Snapshot Grid -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 20px;">
+                    <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px;" class="print-break-inside-avoid">
+                        <div style="font-size: 12px; font-weight: bold; color: #00f3ff; margin-bottom: 8px;">Shipment Daily Volume Trend</div>
+                        ${timelineImg ? `<img src="${timelineImg}" style="width: 100%; height: auto; display: block;" />` : '<p style="color:#64748b;">No chart image</p>'}
+                    </div>
+                    <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px;" class="print-break-inside-avoid">
+                        <div style="font-size: 12px; font-weight: bold; color: #ff007f; margin-bottom: 8px;">Airline Distribution</div>
+                        ${airlineImg ? `<img src="${airlineImg}" style="width: 100%; height: auto; display: block;" />` : '<p style="color:#64748b;">No chart image</p>'}
+                    </div>
+                    <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px;" class="print-break-inside-avoid">
+                        <div style="font-size: 12px; font-weight: bold; color: #9d4edd; margin-bottom: 8px;">Origin Traffic Summary</div>
+                        ${originImg ? `<img src="${originImg}" style="width: 100%; height: auto; display: block;" />` : '<p style="color:#64748b;">No chart image</p>'}
+                    </div>
+                    <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px;" class="print-break-inside-avoid">
+                        <div style="font-size: 12px; font-weight: bold; color: #00ff66; margin-bottom: 8px;">Destination Traffic Summary</div>
+                        ${destImg ? `<img src="${destImg}" style="width: 100%; height: auto; display: block;" />` : '<p style="color:#64748b;">No chart image</p>'}
+                    </div>
+                </div>
+
+                <!-- MAWB Table Log for Printout -->
+                <div style="margin-top: 20px; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 14px;" class="print-break-inside-avoid">
+                    <h3 style="font-size: 13px; font-weight: bold; color: #ffffff; margin-bottom: 10px;">Master Airway Bill Log Detail</h3>
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 11px;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid #334155; color: #94a3b8; font-family: monospace;">
+                                <th style="padding: 6px;">MAWB NUMBER</th>
+                                <th style="padding: 6px;">DATE</th>
+                                <th style="padding: 6px;">AIRLINE</th>
+                                <th style="padding: 6px;">ORIGIN</th>
+                                <th style="padding: 6px;">DESTINATION</th>
+                                <th style="padding: 6px;">LOGGED TIMESTAMP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('printReportContent').innerHTML = reportHtml;
+            document.getElementById('printGeneratedTimestamp').textContent = `Generated: ${new Date().toLocaleString()}`;
+
+            toggleModal('printReportModal', true);
+        }
+
+        // Execute window.print() safely
+        function executePrint() {
+            try {
+                window.print();
+            } catch (err) {
+                console.warn('Direct print blocked by iframe sandbox, falling back to window popup:', err);
+                openPrintWindow();
+            }
+        }
+
+        // Fallback popup print window for restricted iframe environments
+        function openPrintWindow() {
+            const printContent = document.getElementById('printReportContent').innerHTML;
+            const printWin = window.open('', '_blank', 'width=1000,height=800');
+
+            if (!printWin) {
+                showToast('Pop-up window blocked by browser. Please allow popups or click Print directly.', true);
+                return;
+            }
+
+            printWin.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Shipia Air Cargo - Summary Report</title>
+                    <style>
+                        body {
+                            background-color: #ffffff;
+                            color: #1f2937;
+                            font-family: 'Inter', system-ui, sans-serif;
+                            padding: 40px;
+                            margin: 0;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                        h1, h3 { color: #000000; }
+                        /* Light mode card styling */
+                        .print-card {
+                            background: #ffffff;
+                            border: 1px solid #e5e7eb;
+                            border-radius: 8px;
+                            padding: 16px;
+                            margin-bottom: 16px;
+                        }
+                        table { border: 1px solid #e5e7eb; }
+                        th { background: #f9fafb; color: #374151; }
+                        td { border-bottom: 1px solid #f3f4f6; }
+                        @media print {
+                            body { padding: 0; }
+                            .no-print { display: none !important; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="no-print" style="margin-bottom: 20px; text-align: right;">
+                        <button onclick="window.print()" style="background: #00f3ff; color: #000; border: none; padding: 8px 16px; font-weight: bold; border-radius: 6px; cursor: pointer;">
+                            Print / Save as PDF
+                        </button>
+                    </div>
+                    ${printContent.replace(/background: rgba\(15,23,42,0.8\);/g, 'background: #ffffff;')
+                                    .replace(/border: 1px solid #00f3ff;/g, 'border: 1px solid #3b82f6;')
+                                    .replace(/border: 1px solid #ff007f;/g, 'border: 1px solid #ec4899;')
+                                    .replace(/border: 1px solid #9d4edd;/g, 'border: 1px solid #8b5cf6;')
+                                    .replace(/border: 1px solid #00ff66;/g, 'border: 1px solid #22c55e;')
+                                    .replace(/color: #ffffff;/g, 'color: #000000;')
+                                    .replace(/color: #94a3b8;/g, 'color: #6b7280;')
+                                    .replace(/color: #00f3ff;/g, 'color: #2563eb;')}
+                    <div style="margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 12px; font-size: 11px; color: #6b7280; font-family: monospace;">
+                        Shipia Air Cargo — Summary Report • ${new Date().toLocaleString()}
+                    </div>
+                    <script>
+                        window.onload = function() {
+                            setTimeout(function() { window.print(); }, 300);
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+
+            printWin.document.close();
+        }
+
+        // Delete Shipment
+        function deleteShipment(id) {
+            shipments = shipments.filter(item => item.id !== id);
+            saveToLocalStorage();
+            showToast('Shipment record deleted', true);
+            renderDashboard();
+        }
+
+        // Clear All Data
+        function clearAllData() {
+            if (shipments.length === 0) return;
+            shipments = [];
+            saveToLocalStorage();
+            showToast('All shipment records cleared', true);
+            renderDashboard();
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('aero_neon_shipments', JSON.stringify(shipments));
+        }
+
+        // Seed realistic sample air freight data for dynamic dashboard demo
+        function seedSampleData(notify = true) {
+            const airlines = ['Cathay Cargo', 'Emirates SkyCargo', 'Lufthansa Cargo', 'Qatar Airways Cargo', 'FedEx Express', 'Korean Air Cargo'];
+            const origins = ['HKG - HONG KONG', 'PVG - SHANGHAI', 'SIN - SINGAPORE', 'NRT - TOKYO'];
+            const destinations = ['FRA - FRANKFURT', 'LHR - LONDON', 'JFK - NEW YORK', 'ORD - CHICAGO', 'DXB - DUBAI', 'AMS - AMSTERDAM'];
+
+            const sampleLogs = [];
+            const today = new Date();
+
+            for (let i = 0; i < 18; i++) {
+                const pastDays = Math.floor(Math.random() * 25);
+                const dateObj = new Date(today);
+                dateObj.setDate(today.getDate() - pastDays);
+                const dateStr = dateObj.toISOString().split('T')[0];
+
+                const airline = airlines[Math.floor(Math.random() * airlines.length)];
+                const origin = origins[Math.floor(Math.random() * origins.length)];
+                const destination = destinations[Math.floor(Math.random() * destinations.length)];
+                
+                const prefix = Math.floor(100 + Math.random() * 899);
+                const serial = Math.floor(10000000 + Math.random() * 89999999);
+                const mawb = `${prefix}-${serial}`;
+
+                // Spread creation timestamp around shipment date
+                const createdDate = new Date(dateObj);
+                createdDate.setHours(Math.floor(Math.random() * 24), Math.floor(Math.random() * 60));
+
+                sampleLogs.push({
+                    id: 'shp_sample_' + i + '_' + Date.now(),
+                    mawb,
+                    shipmentDate: dateStr,
+                    airline,
+                    origin,
+                    destination,
+                    createdTimestamp: createdDate.toISOString()
+                });
+            }
+
+            shipments = sampleLogs;
+            saveToLocalStorage();
+            renderDashboard();
+
+            if (notify) {
+                showToast('Pre-loaded 18 sample air shipments!');
+            }
+        }
+
+        // Export data table to CSV
+        function exportCSV() {
+            const dataToExport = getFilteredShipments();
+            if (dataToExport.length === 0) {
+                showToast('No shipment data to export!', true);
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "MAWB Number,Shipment Date,Airline,Origin,Destination,Created Timestamp\n";
+
+            dataToExport.forEach(row => {
+                const line = [
+                    `"${row.mawb}"`,
+                    `"${row.shipmentDate}"`,
+                    `"${row.airline}"`,
+                    `"${row.origin}"`,
+                    `"${row.destination}"`,
+                    `"${row.createdTimestamp}"`
+                ].join(",");
+                csvContent += line + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Shipia_Air_Cargo_Summary_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('CSV Report downloaded successfully!');
+        }
+
+        // Utility: Escape HTML string
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
